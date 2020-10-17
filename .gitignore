@@ -7,4 +7,11 @@
 *.iml
 out
 gen
+*.gz
+*.aux
+*.out
+*.npz
+*.log
+*.fls
+__pycache__*
 
