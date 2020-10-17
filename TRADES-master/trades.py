@@ -1,9 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.autograd import Variable
+from torch.autograd import Variable #autograd oops
 import torch.optim as optim
 
+# core code of TRADES
 
 def squared_l2_norm(x):
     flattened = x.view(x.unsqueeze(0).shape[0], -1)
