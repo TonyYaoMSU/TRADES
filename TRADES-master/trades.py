@@ -15,22 +15,22 @@ def l2_norm(x):
     return squared_l2_norm(x).sqrt()
 
 
-def trades_loss(model,
+def trades_loss(model,                  
                 x_natural,
                 y,
                 optimizer,
                 step_size=0.003,
                 epsilon=0.031,
                 perturb_steps=10,
-                beta=1.0,
+                beta=1.0,   # the coeff of second term
                 distance='l_inf'):
-    # define KL-loss
-    criterion_kl = nn.KLDivLoss(size_average=False)
+    # define KL-loss 
+    criterion_kl = nn.KLDivLoss(size_average=False)   
     model.eval()
     batch_size = len(x_natural)
     # generate adversarial example
-    x_adv = x_natural.detach() + 0.001 * torch.randn(x_natural.shape).cpu().detach()
-    if distance == 'l_inf':
+    x_adv = x_natural.detach() + 0.001 * torch.randn(x_natural.shape).cpu().detach()   # detach() tensor won't give it grad calculations anymore.
+    if distance == 'l_inf': 
         for _ in range(perturb_steps):
             x_adv.requires_grad_()
             with torch.enable_grad():
