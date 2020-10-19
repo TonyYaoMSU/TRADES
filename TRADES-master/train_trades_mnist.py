@@ -12,6 +12,8 @@ from models.small_cnn import *
 from trades import trades_loss
 
 
+# Adversarial training for CNN model on MNIST:
+
 parser = argparse.ArgumentParser(description='PyTorch MNIST TRADES Adversarial Training')
 parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                     help='input batch size for training (default: 128)')
@@ -45,11 +47,21 @@ args = parser.parse_args()
 
 # settings
 model_dir = args.model_dir
+
+# if not existing, then make the file!
 if not os.path.exists(model_dir):
     os.makedirs(model_dir)
+
+# determine whether to use cuda
 use_cuda = not args.no_cuda and torch.cuda.is_available()
+
+# bury the seed
 torch.manual_seed(args.seed)
+
+# set device
 device = torch.device("cuda" if use_cuda else "cpu")
+
+# storage related 
 kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
 
 # setup data loader
@@ -81,16 +93,16 @@ def train(args, model, device, train_loader, optimizer, epoch):
                            perturb_steps=args.num_steps,
                            beta=args.beta)
 
-        loss.backward()
+        loss.backward()  # once more: zero_grad -> backward -> step
         optimizer.step()
 
-        # print progress
+        # print progress 
         if batch_idx % args.log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                 100. * batch_idx / len(train_loader), loss.item()))
 
-
+# evaluate the training (verification) during the training process
 def eval_train(model, device, train_loader):
     model.eval()
     train_loss = 0
@@ -109,7 +121,7 @@ def eval_train(model, device, train_loader):
     training_accuracy = correct / len(train_loader.dataset)
     return train_loss, training_accuracy
 
-
+# true test during the test process: totally the same as above
 def eval_test(model, device, test_loader):
     model.eval()
     test_loss = 0
@@ -128,10 +140,10 @@ def eval_test(model, device, test_loader):
     test_accuracy = correct / len(test_loader.dataset)
     return test_loss, test_accuracy
 
-
+# mannually change learning rate
 def adjust_learning_rate(optimizer, epoch):
     """decrease the learning rate"""
-    lr = args.lr
+    lr = args.lr 
     if epoch >= 55:
         lr = args.lr * 0.1
     if epoch >= 75:
@@ -139,33 +151,40 @@ def adjust_learning_rate(optimizer, epoch):
     if epoch >= 90:
         lr = args.lr * 0.001
     for param_group in optimizer.param_groups:
-        param_group['lr'] = lr
+        param_group['lr'] = lr   # change the real param_groups['lr']
 
 
 def main():
     # init model, Net() can be also used here for training
-    model = SmallCNN().to(device)
+    model = SmallCNN().to(device) # we need to go through this small cnn
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
 
     for epoch in range(1, args.epochs + 1):
         # adjust learning rate for SGD
         adjust_learning_rate(optimizer, epoch)
 
+
+
+
+
+        # train -> eval_train -> eval_test
+
+
         # adversarial training
         train(args, model, device, train_loader, optimizer, epoch)
 
         # evaluation on natural examples
         print('================================================================')
-        eval_train(model, device, train_loader)
+        eval_train(model, device, train_loader)  
         eval_test(model, device, test_loader)
         print('================================================================')
 
         # save checkpoint
         if epoch % args.save_freq == 0:
             torch.save(model.state_dict(),
-                       os.path.join(model_dir, 'model-nn-epoch{}.pt'.format(epoch)))
+                       os.path.join(model_dir, 'model-nn-epoch{}.pt'.format(epoch)))   # save model each epoch
             torch.save(optimizer.state_dict(),
-                       os.path.join(model_dir, 'opt-nn-checkpoint_epoch{}.tar'.format(epoch)))
+                       os.path.join(model_dir, 'opt-nn-checkpoint_epoch{}.tar'.format(epoch)))     # save optimizer each epoch (all the gradients )
 
 
 if __name__ == '__main__':

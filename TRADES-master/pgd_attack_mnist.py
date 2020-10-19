@@ -11,6 +11,7 @@ from torchvision import datasets, transforms
 from models.small_cnn import *
 from models.net_mnist import *
 
+#    Evaluate robust CNN model on MNIST by FGSM-40 attack:
 
 parser = argparse.ArgumentParser(description='PyTorch MNIST PGD Attack Evaluation')
 parser.add_argument('--test-batch-size', type=int, default=200, metavar='N',
@@ -51,6 +52,9 @@ testset = torchvision.datasets.MNIST(root='../data', train=False, download=True,
 test_loader = torch.utils.data.DataLoader(testset, batch_size=args.test_batch_size, shuffle=False, **kwargs)
 
 
+
+# white box learned! 
+# 前带_的变量: 标明是一个私有函数, 只用于标明,
 def _pgd_whitebox(model,
                   X,
                   y,
@@ -75,7 +79,7 @@ def _pgd_whitebox(model,
         X_pgd = Variable(X_pgd.data + eta, requires_grad=True)
         eta = torch.clamp(X_pgd.data - X.data, -epsilon, epsilon)
         X_pgd = Variable(X.data + eta, requires_grad=True)
-        X_pgd = Variable(torch.clamp(X_pgd, 0, 1.0), requires_grad=True)
+        X_pgd = Variable(torch.clamp(X_pgd, 0.0, 1.0), requires_grad=True)
     err_pgd = (model(X_pgd).data.max(1)[1] != y.data).float().sum()
     print('err pgd (white-box): ', err_pgd)
     return err, err_pgd
@@ -89,7 +93,12 @@ def _pgd_blackbox(model_target,
                   num_steps=args.num_steps,
                   step_size=args.step_size):
     out = model_target(X)
+
+
+    # calc err of std test instead of adv test
     err = (out.data.max(1)[1] != y.data).float().sum()
+
+    #autograd : Variable
     X_pgd = Variable(X.data, requires_grad=True)
     if args.random:
         random_noise = torch.FloatTensor(*X_pgd.shape).uniform_(-epsilon, epsilon).to(device)
@@ -109,6 +118,9 @@ def _pgd_blackbox(model_target,
         X_pgd = Variable(torch.clamp(X_pgd, 0, 1.0), requires_grad=True)
 
     err_pgd = (model_target(X_pgd).data.max(1)[1] != y.data).float().sum()
+
+
+    # model_target is unknown, black-box will use some early-stage copy of the network parametersto attack, i.e. model_source !!
     print('err pgd black-box: ', err_pgd)
     return err, err_pgd
 
